@@ -1,0 +1,48 @@
+const {
+    SlashCommandBuilder,
+    PermissionFlagsBits,
+    EmbedBuilder
+} = require("discord.js");
+
+const fs = require("fs");
+
+const file = "./data/automod.json";
+
+if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, JSON.stringify({ antiLink: false }, null, 2));
+}
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName("automod")
+        .setDescription("Pengaturan Auto Moderation")
+        .addBooleanOption(option =>
+            option
+                .setName("antilink")
+                .setDescription("Aktif / Nonaktif Anti Link")
+                .setRequired(true)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+
+    async execute(interaction) {
+
+        const status = interaction.options.getBoolean("antilink");
+
+        fs.writeFileSync(
+            file,
+            JSON.stringify({ antiLink: status }, null, 2)
+        );
+
+        const embed = new EmbedBuilder()
+            .setColor(status ? "Green" : "Red")
+            .setTitle("⚙️ Auto Moderation")
+            .setDescription(
+                `Anti Link berhasil **${status ? "Diaktifkan" : "Dinonaktifkan"}**`
+            );
+
+        interaction.reply({
+            embeds: [embed],
+            ephemeral: true
+        });
+    }
+};

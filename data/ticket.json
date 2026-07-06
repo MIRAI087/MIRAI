@@ -1,0 +1,18 @@
+{
+  "category": "636705545335734292",
+  "support": "1484059628659806270",
+  "log": "1483826192560685066",
+  "prefix": "pp",
+  "counter": 1,
+  "panel": {
+    "channel": "1483826192560685066",
+    "title": "🎫 Support Ticket",
+    "description": "Klik tombol di bawah untuk membuat ticket.",
+    "color": "#5865F2",
+    "button": "Buat Ticket",
+    "emoji": "🎫",
+    "thumbnail": "",
+    "image": "",
+    "footer": "MIRAI Ticket System"
+  }
+}
