@@ -1,29 +1,33 @@
 {
-  "spam": {
-    "enabled": true,
-    "limit": 2,
-    "interval": 3,
-    "punishment": "timeout",
-    "duration": "1m"
-  },
-  "antilink": {
-    "enabled": false,
-    "punishment": "timeout",
-    "duration": 600
-  },
-  "invite": {
-    "enabled": false,
-    "punishment": "timeout",
-    "duration": 600
-  },
-  "badword": {
-    "enabled": false,
-    "punishment": "timeout",
-    "duration": 600
-  },
-  "caps": {
-    "enabled": false,
-    "percentage": 80,
-    "punishment": "warn"
-  }
+    "spam": {
+        "enabled": true,
+        "limit": 2,
+        "interval": 3,
+        "punishment": "timeout",
+        "duration": "1m"
+    },
+    "antilink": {
+        "enabled": false,
+        "punishment": "timeout",
+        "duration": 600
+    },
+    "invite": {
+        "enabled": false,
+        "punishment": "timeout",
+        "duration": 600
+    },
+    "badword": {
+        "enabled": false,
+        "punishment": "timeout",
+        "duration": 600
+    },
+    "caps": {
+        "enabled": false,
+        "percentage": 80,
+        "punishment": "warn"
+    },
+    "logs": {
+        "enabled": true,
+        "channel": "1483826192560685066"
+    }
 }

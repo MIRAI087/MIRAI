@@ -95,5 +95,50 @@ module.exports = async (message) => {
     } catch (err) {
         console.log(err);
     }
+const logChannel = message.guild.channels.cache.get(
+    config.logs.channel
+);
+
+if (logChannel) {
+
+    const { EmbedBuilder } = require("discord.js");
+
+    const embed = new EmbedBuilder()
+        .setColor("Red")
+        .setTitle("🚨 AutoMod • Spam Detected")
+        .addFields(
+            {
+                name: "👤 User",
+                value: `${message.author}`,
+                inline: true
+            },
+            {
+                name: "📄 Pelanggaran",
+                value: "Spam",
+                inline: true
+            },
+            {
+                name: "📈 Level",
+                value: `${level}`,
+                inline: true
+            },
+            {
+                name: "🗑️ Pesan Dihapus",
+                value: `${messages.length}`,
+                inline: true
+            },
+            {
+                name: "📍 Channel",
+                value: `${message.channel}`,
+                inline: true
+            }
+        )
+        .setTimestamp();
+
+    await logChannel.send({
+        embeds: [embed]
+    });
+
+}
 
 };
