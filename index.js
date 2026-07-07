@@ -1,80 +1,129 @@
 require("dotenv").config();
 
 const {
-  Client,
-  GatewayIntentBits,
-  Collection,
-  Events,
+    Client,
+    GatewayIntentBits,
+    Collection,
+    Events
 } = require("discord.js");
 
+const { LavalinkManager } = require("lavalink-client");
+
 const fs = require("node:fs");
+const path = require("node:path");
 
 const ticketEvent = require("./events/ticket");
 const antiLink = require("./events/automod/antiLink");
 const antiSpam = require("./events/automod/antiSpam");
 
 const client = new Client({
-  intents: [
-  GatewayIntentBits.Guilds,
-  GatewayIntentBits.GuildMessages,
-  GatewayIntentBits.MessageContent,
-],
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates
+    ]
 });
 
 client.commands = new Collection();
 
-const commandFiles = fs
-  .readdirSync("./commands")
-  .filter(file => file.endsWith(".js"));
+client.lavalink = new LavalinkManager({
+    nodes: [
+        {
+            id: "main",
+            host: "127.0.0.1",
+            port: 2333,
+            authorization: "youshallnotpass",
+            secure: false
+        }
+    ],
 
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
+    sendToShard: (guildId, payload) => {
+        const guild = client.guilds.cache.get(guildId);
+        if (guild) guild.shard.send(payload);
+    }
+});
+
+function loadCommands(dir) {
+    const files = fs.readdirSync(dir);
+
+    for (const file of files) {
+
+        const fullPath = path.join(dir, file);
+
+        if (fs.statSync(fullPath).isDirectory()) {
+            loadCommands(fullPath);
+            continue;
+        }
+
+        if (!file.endsWith(".js")) continue;
+
+        const command = require(path.resolve(fullPath));
+
+        if (command.data && command.execute) {
+            client.commands.set(command.data.name, command);
+        }
+    }
 }
 
-client.once(Events.ClientReady, client => {
-  console.log(`✅ Login sebagai ${client.user.tag}`);
+loadCommands(path.join(__dirname, "commands"));
+
+client.once(Events.ClientReady, () => {
+    console.log(`✅ Login sebagai ${client.user.tag}`);
 });
 
 client.on(Events.InteractionCreate, async interaction => {
 
-  // Slash Command
-  if (interaction.isChatInputCommand()) {
-    const command = client.commands.get(interaction.commandName);
+    if (interaction.isChatInputCommand()) {
 
-    if (!command) return;
+        const command = client.commands.get(interaction.commandName);
 
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(error);
+        if (!command) return;
 
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({
-          content: "❌ Terjadi error.",
-          ephemeral: true,
-        });
-      } else {
-        await interaction.reply({
-          content: "❌ Terjadi error.",
-          ephemeral: true,
-        });
-      }
+        try {
+            await command.execute(interaction);
+        } catch (err) {
+            console.error(err);
+
+            if (interaction.deferred || interaction.replied) {
+                await interaction.followUp({
+                    content: "❌ Terjadi error.",
+                    ephemeral: true
+                }).catch(() => {});
+            } else {
+                await interaction.reply({
+                    content: "❌ Terjadi error.",
+                    ephemeral: true
+                }).catch(() => {});
+            }
+        }
+
+        return;
     }
 
-    return;
-  }
-
-  // Button Ticket
-if (interaction.isButton()) {
-    await ticketEvent(interaction);
-}
+    if (interaction.isButton()) {
+        await ticketEvent(interaction);
+    }
 
 });
 
-client.on("messageCreate", async (message) => {
+client.on("messageCreate", async message => {
     await antiLink(message);
     await antiSpam(message);
+});
+
+client.on("raw", (packet) => {
+    client.lavalink.sendRawData(packet);
+});
+
+client.once("ready", async () => {
+    await client.lavalink.init({
+        id: client.user.id,
+        username: client.user.username
+    });
+
+    console.log(`✅ Login sebagai ${client.user.tag}`);
+    console.log("🎵 Lavalink Connected!");
 });
 
 client.login(process.env.TOKEN);
