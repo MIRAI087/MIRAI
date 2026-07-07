@@ -24,7 +24,7 @@ module.exports = {
 
         const user = interaction.options.getUser("user");
 
-        const data = infractions.get(user.id);
+        const data = infractions.get(interaction.guild.id,user.id);
 
         if (!data) {
             return interaction.reply({

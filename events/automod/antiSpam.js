@@ -49,6 +49,7 @@ module.exports = async (message) => {
 
     // Tambah level pelanggaran
     const level = infractions.add(
+	message.guild.id,
         message.author.id,
         "Spam"
     );
