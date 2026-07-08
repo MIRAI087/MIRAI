@@ -7,8 +7,6 @@ const {
     Events
 } = require("discord.js");
 
-const { LavalinkManager } = require("lavalink-client");
-
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -27,28 +25,10 @@ const client = new Client({
 
 client.commands = new Collection();
 
-client.lavalink = new LavalinkManager({
-    nodes: [
-        {
-            id: "main",
-            host: "127.0.0.1",
-            port: 2333,
-            authorization: "youshallnotpass",
-            secure: false
-        }
-    ],
-
-    sendToShard: (guildId, payload) => {
-        const guild = client.guilds.cache.get(guildId);
-        if (guild) guild.shard.send(payload);
-    }
-});
-
 function loadCommands(dir) {
     const files = fs.readdirSync(dir);
 
     for (const file of files) {
-
         const fullPath = path.join(dir, file);
 
         if (fs.statSync(fullPath).isDirectory()) {
@@ -72,10 +52,8 @@ client.once(Events.ClientReady, () => {
     console.log(`✅ Login sebagai ${client.user.tag}`);
 });
 
-client.on(Events.InteractionCreate, async interaction => {
-
+client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
-
         const command = client.commands.get(interaction.commandName);
 
         if (!command) return;
@@ -104,26 +82,11 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isButton()) {
         await ticketEvent(interaction);
     }
-
 });
 
-client.on("messageCreate", async message => {
+client.on("messageCreate", async (message) => {
     await antiLink(message);
     await antiSpam(message);
-});
-
-client.on("raw", (packet) => {
-    client.lavalink.sendRawData(packet);
-});
-
-client.once("ready", async () => {
-    await client.lavalink.init({
-        id: client.user.id,
-        username: client.user.username
-    });
-
-    console.log(`✅ Login sebagai ${client.user.tag}`);
-    console.log("🎵 Lavalink Connected!");
 });
 
 client.login(process.env.TOKEN);
