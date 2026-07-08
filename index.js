@@ -7,6 +7,8 @@ const {
     Events
 } = require("discord.js");
 
+const { LavalinkManager } = require("lavalink-client");
+
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -24,6 +26,23 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+
+client.lavalink = new LavalinkManager({
+    nodes: [
+        {
+            id: "main",
+            host: process.env.LAVALINK_HOST,
+            port: Number(process.env.LAVALINK_PORT),
+            authorization: process.env.LAVALINK_PASSWORD,
+            secure: process.env.LAVALINK_SECURE === "true"
+        }
+    ],
+
+    sendToShard: (guildId, payload) => {
+        const guild = client.guilds.cache.get(guildId);
+        if (guild) guild.shard.send(payload);
+    }
+});
 
 function loadCommands(dir) {
     const files = fs.readdirSync(dir);
@@ -48,12 +67,36 @@ function loadCommands(dir) {
 
 loadCommands(path.join(__dirname, "commands"));
 
-client.once(Events.ClientReady, () => {
+client.once(Events.ClientReady, async () => {
     console.log(`✅ Login sebagai ${client.user.tag}`);
+
+    await client.lavalink.init({
+        id: client.user.id,
+        username: client.user.username
+    });
+
+    console.log("🎵 Lavalink Connected!");
+});
+
+client.on("raw", (packet) => {
+    client.lavalink.sendRawData(packet);
+});
+
+client.lavalink.nodeManager.on("connect", (node) => {
+    console.log(`✅ Lavalink Node Connected: ${node.id}`);
+});
+
+client.lavalink.nodeManager.on("disconnect", (node, reason) => {
+    console.log(`❌ Lavalink Node Disconnected: ${reason}`);
+});
+
+client.lavalink.nodeManager.on("error", (node, error) => {
+    console.error("❌ Lavalink Error:", error);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
+
         const command = client.commands.get(interaction.commandName);
 
         if (!command) return;
