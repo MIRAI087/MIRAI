@@ -82,21 +82,8 @@ client.on("raw", (packet) => {
     client.lavalink.sendRawData(packet);
 });
 
-client.lavalink.nodeManager.on("connect", (node) => {
-    console.log(`✅ Lavalink Node Connected: ${node.id}`);
-});
-
-client.lavalink.nodeManager.on("disconnect", (node, reason) => {
-    console.log(`❌ Lavalink Node Disconnected: ${reason}`);
-});
-
-client.lavalink.nodeManager.on("error", (node, error) => {
-    console.error("❌ Lavalink Error:", error);
-});
-
 client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
-
         const command = client.commands.get(interaction.commandName);
 
         if (!command) return;
@@ -105,18 +92,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
             await command.execute(interaction);
         } catch (err) {
             console.error(err);
-
-            if (interaction.deferred || interaction.replied) {
-                await interaction.followUp({
-                    content: "❌ Terjadi error.",
-                    ephemeral: true
-                }).catch(() => {});
-            } else {
-                await interaction.reply({
-                    content: "❌ Terjadi error.",
-                    ephemeral: true
-                }).catch(() => {});
-            }
         }
 
         return;
