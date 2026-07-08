@@ -7,10 +7,8 @@ const {
     Events
 } = require("discord.js");
 
-const { LavalinkManager } = require("lavalink-client");
-
-const fs = require("node:fs");
-const path = require("node:path");
+const fs = require("fs");
+const path = require("path");
 
 const ticketEvent = require("./events/ticket");
 const antiLink = require("./events/automod/antiLink");
@@ -27,23 +25,6 @@ const client = new Client({
 
 client.commands = new Collection();
 
-client.lavalink = new LavalinkManager({
-    nodes: [
-        {
-            id: "main",
-            host: process.env.LAVALINK_HOST,
-            port: Number(process.env.LAVALINK_PORT),
-            authorization: process.env.LAVALINK_PASSWORD,
-            secure: process.env.LAVALINK_SECURE === "true"
-        }
-    ],
-
-    sendToShard: (guildId, payload) => {
-        const guild = client.guilds.cache.get(guildId);
-        if (guild) guild.shard.send(payload);
-    }
-});
-
 function loadCommands(dir) {
     const files = fs.readdirSync(dir);
 
@@ -57,7 +38,7 @@ function loadCommands(dir) {
 
         if (!file.endsWith(".js")) continue;
 
-        const command = require(path.resolve(fullPath));
+        const command = require(fullPath);
 
         if (command.data && command.execute) {
             client.commands.set(command.data.name, command);
@@ -67,19 +48,8 @@ function loadCommands(dir) {
 
 loadCommands(path.join(__dirname, "commands"));
 
-client.once(Events.ClientReady, async () => {
+client.once(Events.ClientReady, () => {
     console.log(`✅ Login sebagai ${client.user.tag}`);
-
-    await client.lavalink.init({
-        id: client.user.id,
-        username: client.user.username
-    });
-
-    console.log("🎵 Lavalink Connected!");
-});
-
-client.on("raw", (packet) => {
-    client.lavalink.sendRawData(packet);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

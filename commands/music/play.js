@@ -6,7 +6,7 @@ const {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("play")
-        .setDescription("Putar lagu dari YouTube, Spotify, atau SoundCloud")
+        .setDescription("Putar lagu")
         .addStringOption(option =>
             option
                 .setName("query")
@@ -28,86 +28,73 @@ module.exports = {
 
         const query = interaction.options.getString("query");
 
-        try {
-            let player = interaction.client.lavalink.getPlayer(interaction.guild.id);
+        let player = interaction.client.kazagumo.players.get(interaction.guild.id);
 
-            if (!player) {
-                player = interaction.client.lavalink.createPlayer({
-                    guildId: interaction.guild.id,
-                    voiceChannelId: channel.id,
-                    textChannelId: interaction.channel.id,
-                    selfDeaf: true,
-                    selfMute: false
-                });
+        if (!player) {
+            player = await interaction.client.kazagumo.createPlayer({
+                guildId: interaction.guild.id,
+                textId: interaction.channel.id,
+                voiceId: channel.id,
+                volume: 100,
+                deaf: true
+            });
 
-                await player.connect();
-            }
+            await player.connect();
+        } else if (player.voiceId !== channel.id) {
+            player.setVoiceChannel(channel.id);
+            await player.connect();
+        }
 
-            const result = await player.search({
-    query,
-    source: "youtube"
-}, interaction.user);
+        const result = await interaction.client.kazagumo.search(query, {
+            requester: interaction.user
+        });
 
-            if (!result || !result.tracks.length) {
-    return interaction.editReply("❌ Lagu tidak ditemukan.");
-}
+        if (!result || !result.tracks.length) {
+            return interaction.editReply({
+                content: "❌ Lagu tidak ditemukan."
+            });
+        }
 
-player.queue.add(result.tracks);
+        if (result.type === "PLAYLIST") {
+            player.queue.add(result.tracks);
+        } else {
+            player.queue.add(result.tracks[0]);
+        }
 
-if (!player.playing && !player.paused) {
-    await player.play();
-}
+        if (!player.playing && !player.paused) {
+            await player.play();
+        }
 
-const track = result.tracks[0];
+        const track = result.tracks[0];
 
-            player.queue.add(track);
+        const duration = track.length
+            ? `${Math.floor(track.length / 60000)}:${String(Math.floor((track.length % 60000) / 1000)).padStart(2, "0")}`
+            : "Live";
 
-            if (!player.playing && !player.paused) {
-                await player.play();
-            }
-
-            const duration = track.info.isStream
-                ? "Live"
-                : `${Math.floor(track.info.length / 60000)}:${String(
-                    Math.floor((track.info.length % 60000) / 1000)
-                ).padStart(2, "0")}`;
-
-            const embed = new EmbedBuilder()
-                .setColor("#5865F2")
-                .setTitle("🎵 Sekarang Diputar")
-                .setDescription(`**${track.info.title}**`)
-                                .addFields(
-                    {
-                        name: "👤 Author",
-                        value: track.info.author || "Unknown",
-                        inline: true
-                    },
-                    {
-                        name: "⏱ Durasi",
-                        value: duration,
-                        inline: true
-                    }
-                );
-
-            if (track.info.artworkUrl) {
-                embed.setThumbnail(track.info.artworkUrl);
-            }
-
-            embed.setFooter({
+        const embed = new EmbedBuilder()
+            .setColor("#5865F2")
+            .setTitle("🎵 Ditambahkan ke Queue")
+            .setDescription(`**${track.title}**`)
+            .addFields(
+                {
+                    name: "👤 Author",
+                    value: track.author ?? "Unknown",
+                    inline: true
+                },
+                {
+                    name: "⏱ Durasi",
+                    value: duration,
+                    inline: true
+                }
+            )
+            .setThumbnail(track.thumbnail ?? null)
+            .setFooter({
                 text: `Diminta oleh ${interaction.user.username}`,
                 iconURL: interaction.user.displayAvatarURL()
             });
 
-            await interaction.editReply({
-                embeds: [embed]
-            });
-
-        } catch (err) {
-            console.error(err);
-
-            await interaction.editReply({
-                content: "❌ Terjadi kesalahan saat memutar lagu."
-            });
-        }
+        return interaction.editReply({
+            embeds: [embed]
+        });
     }
 };
